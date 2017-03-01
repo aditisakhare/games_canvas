@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<title> Game Session </title>
+	<style>
+		*{ padding: 0; margin: 0 auto; }
+		canvas { background: #000000; display:block;margin:0 auto; }
+	</style>
+</head>
+<body>
+	<canvas id="myCanvas" width="480" height="320"></canvas>
+	<script>
+		
+		var canvas = document.getElementById("myCanvas");
+		var ctx = canvas.getContext("2d");
+		
+		// variables to specify x and y distance for ball 1
+		var x = canvas.width/2;
+		var y = canvas.height-30;
+		// variables to specify x and y distance for ball 2
+		var x2 = canvas.width/2-20;
+		var y2 = canvas.height-30;
+		// change in direction of the ball 1 and the amount by which it should change
+		var dx = 2;
+		var dy = -2;
+		// change in direction of the ball 2 and the amount by which it should change
+		var dx2 = -3;
+		var dy2 = -3;
+		
+		var ballRadius = 10;     //radius of both balls
+		
+		// parameters for paddle -> x dist , y dist ,height ,width
+		var paddleHeight = 10;
+		var paddleWidth = 75;
+		var paddleX = (canvas.width-paddleWidth)/2;    // canavs.width returns width of canvas
+		var paddleY = (canvas.height-paddleHeight);
+		
+		// for checking if keyboard key ( right or left ) is pressed or not
+		var leftPressed = false;     //set it to false as right key is not pressed in the beginning
+		var rightPressed = false;    // set it to false as left key is not pressed in the beginning
+		
+		// variables for setting up bricks
+		var brickRowCount = 4;			// 4 rows
+		var brickColumnCount = 5;		// 5 columns
+		var brickWidth = 75;			// width of brick
+		var brickHeight = 20;			// height of brick
+		var brickPadding = 10;			// distance between two bricks
+		var brickOffsetTop = 30;		// to set the top left corner of first brick ( y distance here)
+		var brickOffsetLeft = 30;		// to set the top left corner of first brick ( x distance here)
+		var brickX,brickY;				
+		
+		// keep track of score
+		var score=0;
+		var counter =0;			// for changing no. of bricks in row 2
+		var count=0;			// for changing no. of bricks in row 4
+
+		//  define an array for bricks  ( 2 dimensional array )
+		var bricks = [];
+		
+		//  two for loops to set column and row
+		for( i=0 ; i<brickColumnCount ; i++) {
+			bricks[i] = [];
+			for( j=0; j<brickRowCount ; j++) {
+					// define every brick as an object 
+				bricks[i][j]= { x: 0, y: 0, status: 1 };   // x distance ,y distance ,status to check if brick is to be drawn
+			}
+		}	
+		
+		//add event listeners
+		document.addEventListener("keydown",keyDownHandler);
+		document.addEventListener("keyup",keyUpHandler);
+		
+		function keyDownHandler(event) {
+		// function executed when any key is pressed
+			if( event.keyCode == 39 ) {
+				// keyCode 39 is for right arrow key
+				rightPressed = true;		// right arrow key is pressed
+				}
+			else if( event.keyCode == 37 ) {
+				// keycode 37 for left arrow key
+				leftPressed = true;
+				}
+		}
+		
+		function keyUpHandler(event) {
+		// function called when key is released
+			if( event.keyCode == 39 ) {
+				rightPressed = false;
+				}
+			else if( event.keyCode == 37 ) {
+				leftPressed = false;
+				}
+		}
+		
+		function drawBall() {
+		// draw a ball 1 by creating a path and using arc method
+			ctx.beginPath();
+			ctx.arc(x,y,ballRadius,0,2*Math.PI,false);
+			ctx.fillStyle = "#0095DD";	// 
+			ctx.fill();
+			ctx.closePath();
+		}
+		
+		function drawBall2() {
+		// draw ball 2 by creating a path and using arc method
+			ctx.beginPath();
+			ctx.arc(x2,y2,ballRadius,0,2*Math.PI,false);
+			ctx.fillStyle = "#eee";	//gray ball
+			ctx.fill();
+			ctx.closePath();
+		}
+		
+		function drawPaddle() {
+		// draw a rectangle
+			ctx.beginPath();
+			ctx.rect(paddleX,paddleY,paddleWidth,paddleHeight);
+			ctx.fillStyle = "#0095DD";
+			ctx.fill();
+			ctx.closePath();
+		}
+		
+		function drawBricks() {
+		// draw bricks
+			 for( i=0; i<brickColumnCount ;i++) {
+				for( j=0; j<brickRowCount ;j++) {
+				
+				// for deciding how many bricks to paint in each row
+				if (counter==0) {
+					bricks[0][j].status=0;
+					counter=1;
+				}
+				else{
+					counter=0;
+				}
+				if (count==0) {
+					bricks[brickColumnCount-1][j].status=0;
+					count=1;
+				}
+				else{
+					count=0;
+				}
+				
+				// if status is 1 , paint the brick
+				if( bricks[i][j].status == 1 ) {
+					brickX = (i*( brickWidth + brickPadding ))+brickOffsetLeft ;	// x dist for each brick
+					brickY = (j*( brickHeight + brickPadding ))+brickOffsetTop ;	// y dist for each brick
+					
+					bricks[i][j].x= brickX;			// to remember the x dist of each brick
+					bricks[i][j].y= brickY;			// to remember the y dist of each brick
+					
+				//paint brick	
+					ctx.beginPath();
+					ctx.rect(brickX,brickY,brickWidth,brickHeight);
+					if( j==0 )
+					ctx.fillStyle = "rgb(255, 0, 0)";
+					if( j==1 )
+					ctx.fillStyle = "orange";
+					if( j==2 )
+					ctx.fillStyle = "rgb(0, 128, 0)";
+					if( j==3 )
+					ctx.fillStyle = "rgb(255, 255, 0)";
+					ctx.fill();
+					ctx.closePath();		
+}					
+				}
+				
+			}
+		}
+		
+		function collisionDetection() {
+		// detect if ball is touching the brick
+			 for( i=0; i<brickColumnCount ;i++) {
+				for( j=0; j<brickRowCount ;j++) {
+				
+				var b = bricks[i][j];		// rename brick[i][j] as b
+				
+				if( b.status == 1 ) {
+				// if brick is not yet destroyed
+				// check if ball lie within the brick by comparing their x and y distances
+				if( x > b.x && x < b.x+brickWidth && y > b.y && y < b.y+brickHeight ) {
+						dy = -dy;	// change y direction of ball if ball hits the brick
+						bricks[i][j].status = 0; // destroy the brick by setting its status to 1
+						score++;		// increase yor score
+					}
+				
+					// similarly for ball 2
+				if( x2 > b.x && x2 < b.x+brickWidth && y2 > b.y && y2 < b.y+brickHeight ) {
+						dy2 = -dy2;
+						bricks[i][j].status = 0;
+						score++;
+						
+					}	
+				  }
+				}
+			}	
+		}
+		
+		// function for full screen ( works in mozilla )
+		document.addEventListener("keydown", function(e) {
+				if (e.keyCode == 13) {
+						toggleFullScreen();
+					}
+			}, false);
+		
+		function toggleFullScreen() {
+				if (!document.mozFullScreenElement) {
+					document.documentElement.mozRequestFullScreen();
+					} else {
+				if (document.mozCancelFullScreen()) {
+					document.mozCancelFullScreen()(); 
+				}
+			}
+		}
+		
+		// common function to draw ball, paddle, bricks and detect colision after every frame
+		function draw() {
+			//code
+			ctx.clearRect(0,0,canvas.width,canvas.height);
+			drawBricks();
+			drawBall();
+			drawBall2();
+			drawPaddle();
+			collisionDetection();
+			ctx.fillText("Score: "+score, 8, 20);
+			
+			// if all bricks destroyed
+			if ( score == (brickColumnCount*brickRowCount) )
+							alert("Jeet gaya bhai");
+			
+			// to keep ball 1 inside the canvas
+			// bounce from left and right wall
+			// change x direction if x dist of ball is outside 0 or canvas,width
+			if( x+dx > canvas.width-ballRadius || x+dx < ballRadius )
+				dx = -dx;
+			if( x2+dx2 > canvas.width-ballRadius || x2+dx2 < ballRadius )    //ball 2
+				dx2 = -dx2;	
+			
+			// ball 1
+			// if it is less than 0 , change direction
+			// bounce from top wall
+			if( y+dy < ballRadius ) {
+				dy = -dy;
+			}
+			else if( y+dy > canvas.height-ballRadius ) {   // bottom wall
+				if( x+dx > paddleX && x+dx < paddleX+paddleWidth )
+				// if it touches paddle ,change direction
+					dy = -dy;
+				else {
+					// game over if it touches anywhere other than paddle 
+						alert("Game Over");
+						document.location.reload();
+					}
+			}
+			
+			// ball 2
+			if( y2+dy2 < ballRadius ) {
+				dy2 = -dy2;
+			}
+			else if( y2+dy2 > canvas.height-ballRadius ) {
+				if( x2+dx2 > paddleX && x2+dx2 < paddleX+paddleWidth )
+					dy2 = -dy2;
+				else {
+						alert("Game Over");
+						document.location.reload();
+					}
+			}
+			
+
+				// if key pressed , move the paddle
+			if( rightPressed == true && paddleX < (canvas.width-paddleWidth) ) 
+				paddleX += 7;
+			if( leftPressed == true && paddleX > 0 )
+				paddleX -= 7;
+			
+			// change x and y dist of ball 1 after every frame
+			x += dx;
+			y += dy;	
+			
+			//  change x and y dist of ball 1 after every frame
+			x2 += dx2;
+			y2 += dy2;
+			
+			// to repaint the canvas after every frame
+			// can use setInterval(draw,10) to call draw function after every 10 milliseconds instead of requestAnimationFrame
+			requestAnimationFrame(draw);
+			
+		}
+		draw();
+		
+		
+	</script>
+</body>
+</html>
